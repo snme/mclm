@@ -1,0 +1,90 @@
+
+============================================================
+Sample 0 | Be2PmSm
+============================================================
+GROUND TRUTH:
+PtNi3Tl2Se6 crystallizes in the trigonal P-3m1 space group. Pt(1) is bonded to six equivalent Se(1) atoms to form PtSe6 octahedra that share edges with six equivalent Ni(1)Tl2Se4 octahedra. All Pt(1)-Se(1) bond lengths are 2.53 Å. Ni(1) is bonded to two equivalent Tl(1) and four equivalent Se(1) ato
+---
+GENERATED:
+NdTb is Hexagonal - P6/mmm with A2B structure. Nd and Tb are in a hexagonal structure with all Nd and Tb atoms with the same coordinates. Nd and Tb atoms are in a face-sharing structure. The Tb atoms are in a face-sharing structure with the Nd atoms. The Tb atoms are in a face-sharing structure with
+
+============================================================
+Sample 1 | LuSiTi2
+============================================================
+GROUND TRUTH:
+ErNdW2Si2C crystallizes in the monoclinic Cm space group. Er(1) is bonded in a 2-coordinate geometry to two equivalent Si(1), three equivalent Si(2), and two equivalent C(1) atoms. Both Er(1)-Si(1) bond lengths are 3.04 Å. There is one shorter (3.12 Å) and two longer (3.13 Å) Er(1)-Si(2) bond length
+---
+GENERATED:
+The structure of CeP2 is alpha-Platinum structured and crystallizes in the cubic Pm-3 space group. There are two inequivalent Ce sites, which are labeled as Ce1 and Ce2. In the Ce1 site, Ce is bonded to four equivalent Ce atoms and four equivalent P atoms to form CeCe4P4 tetrahedra that share corner
+
+============================================================
+Sample 2 | CuPdRuZn
+============================================================
+GROUND TRUTH:
+LiScCrAs is Heusler-derived structured and crystallizes in the cubic F-43m space group. Li(1) is bonded in a body-centered cubic geometry to four equivalent Cr(1) and four equivalent As(1) atoms. All Li(1)-Cr(1) bond lengths are 2.82 Å. All Li(1)-As(1) bond lengths are 2.82 Å. Sc(1) is bonded in a d
+---
+GENERATED:
+The PtRhPd2 structure is a derivative of the Cu3Au type, which is related to the NiAs2 structure. PtRhPd2 is a ternary alloy. The Pt(1) atom is bonded in a 9-coordinate geometry to four equivalent Rh(1) and five equivalent Pd(1) atoms. All Pt(1) atom bond lengths are 2.67 Å. The Rh(1) atom is bonded
+
+============================================================
+Sample 3 | Ge8Rb8Te12
+============================================================
+GROUND TRUTH:
+Ba4Zr2Ir2O11 crystallizes in the triclinic P1 space group. There are four inequivalent Ba sites. In the first Ba site, Ba(1) is bonded to one O(10), one O(11), one O(4), one O(5), one O(6), one O(9), two equivalent O(1), two equivalent O(2), and two equivalent O(3) atoms to form BaO12 cuboctahedra t
+---
+GENERATED:
+The material is the first of a new class of superconductors. 1200-2000 K. The structure of this material is a crystal lattice of 3600 atoms. The structure is composed of 3600 atoms. 2000 atoms are arranged in a regular lattice of 3600 atoms. The material is the first of a new class of superconductor
+
+============================================================
+Sample 4 | As2GeW
+============================================================
+GROUND TRUTH:
+ReTcMnGe crystallizes in the cubic F-43m space group. Re(1) is bonded in a 4-coordinate geometry to four equivalent Tc(1) and four equivalent Mn(1) atoms. All Re(1)-Tc(1) bond lengths are 2.61 Å. All Re(1)-Mn(1) bond lengths are 2.61 Å. Tc(1) is bonded in a 14-coordinate geometry to four equivalent 
+---
+GENERATED:
+AsAsSb3 crystallizes in the orthorhombic Cmcm space group. As(1) is bonded in a body-centered cubic geometry to three equivalent As(1) and five equivalent Sb(1) atoms. All As(1)-As(1) bond lengths are 2.75 Å. All As(1)-Sb(1) bond lengths are 2.66 Å. Sb(1) is bonded in a body-centered cubic geometry 
+
+============================================================
+Sample 5 | CuGdTa2
+============================================================
+GROUND TRUTH:
+NdSbAs2 is Heusler structured and crystallizes in the cubic Fm-3m space group. Nd(1) is bonded in a distorted body-centered cubic geometry to six equivalent Sb(1) and eight equivalent As(1) atoms. All Nd(1)-Sb(1) bond lengths are 3.66 Å. All Nd(1)-As(1) bond lengths are 3.17 Å. Sb(1) is bonded in a 
+---
+GENERATED:
+The material is a metallic element with a 3D structure of interlocked hexagonal lattices, where each atom is surrounded by three equivalent atoms in a regular triangular pattern. The structure is metallic, and the atoms are arranged in a hexagonal lattice. The structure is metallic, and the atoms ar
+
+============================================================
+Sample 6 | FFe
+============================================================
+GROUND TRUTH:
+TbNiSb2 is Parent of FeAs superconductors-derived structured and crystallizes in the tetragonal P4/nmm space group. Tb(1) is bonded to four equivalent Ni(1), four equivalent Sb(1), and four equivalent Sb(2) atoms to form a mixture of edge, face, and corner-sharing TbNi4Sb8 cuboctahedra. All Tb(1)-Ni
+---
+GENERATED:
+FeF is Tetradymite structured and crystallizes in the cubic Fm-3m space group. Fe(1) is bonded in a 12-coordinate geometry to six equivalent F(1) atoms. All Fe(1)-F(1) bond lengths are 2.73 Å. F(1) is bonded in a 12-coordinate geometry to six equivalent Fe(1) atoms.
+
+============================================================
+Sample 7 | SbTc3
+============================================================
+GROUND TRUTH:
+CrAsO4 crystallizes in the monoclinic P2_1/c space group. Cr(1) is bonded in a 6-coordinate geometry to one O(2), one O(4), two equivalent O(1), and two equivalent O(3) atoms. The Cr(1)-O(2) bond length is 1.91 Å. The Cr(1)-O(4) bond length is 1.93 Å. There is one shorter (2.01 Å) and one longer (2.
+---
+GENERATED:
+Tc3Mo is a tetragonal (ZrCd3-type) structure. Tc(1) is bonded in a distorted body-centered cubic geometry to four equivalent Tc(2) and four equivalent Mo(1) atoms. All Tc(1)–Tc(2) bond lengths are 2.85 Å. All Tc(1)–Mo(1) bond lengths are 2.85 Å. Mo(1) is bonded in a distorted body-centered cubic geo
+
+============================================================
+Sample 8 | Cs2S6Sm2V2
+============================================================
+GROUND TRUTH:
+ZrPdAu2 is Heusler structured and crystallizes in the cubic Fm-3m space group. Zr(1) is bonded in a body-centered cubic geometry to six equivalent Pd(1) and eight equivalent Au(1) atoms. All Zr(1)-Pd(1) bond lengths are 3.29 Å. All Zr(1)-Au(1) bond lengths are 2.85 Å. Pd(1) is bonded in a distorted 
+---
+GENERATED:
+C3H2(1)Cl2N3O3 (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  (1)  
+
+============================================================
+Sample 9 | AgCoInLi
+============================================================
+GROUND TRUTH:
+Pr2BaCoO5 crystallizes in the orthorhombic Immm space group. Ba(1) is bonded in a distorted q6 geometry to two equivalent O(2) and eight equivalent O(1) atoms. Both Ba(1)-O(2) bond lengths are 2.99 Å. All Ba(1)-O(1) bond lengths are 2.99 Å. Pr(1) is bonded in a 7-coordinate geometry to one O(2) and 
+---
+GENERATED:
+AgCo2 is a tetrahedral structure. Ag(1) is bonded to four equivalent Co(1) atoms to form a distorted TlNi4 tetrahedron. All Ag(1)–Co(1) bond lengths are 2.67 Å. Co(1) is bonded in a distorted tetrahedral geometry to four equivalent Ag(1) atoms. All Co(1)–Ag(1) bond lengths are 2.67 Å.

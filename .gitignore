@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Logs
+**logs/
+
+# Output
+*.o
+*.e
+**wandb**/
+**checkpoint**
+
 # Distribution / packaging
 .Python
 build/
