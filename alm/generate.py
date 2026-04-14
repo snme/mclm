@@ -1,6 +1,6 @@
 import argparse
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from ase.db import connect
 import polars as pl
 
@@ -71,8 +71,8 @@ def evaluate(args):
     model = model.to(device)
     model.eval()
 
-    # Load dataset (same object as training)
-    dataset = AtomisticLanguageDataset(
+    # Load validation dataset
+    full_dataset = AtomisticLanguageDataset(
         tokenizer=model.tokenizer,
         db_path=args.db_path,
         csv_path=args.csv_path,
@@ -80,12 +80,16 @@ def evaluate(args):
         max_num_tokens=args.max_num_tokens,
     )
     df = pl.read_csv(args.csv_path)
+    generator = torch.Generator().manual_seed(42)
+    _, dataset = random_split(full_dataset, [0.8, 0.2], generator=generator)
 
     # Iterate over samples
-    for i in range(min(args.n_samples, len(dataset))):
-        sample = dataset[i]
+    for i, sample in enumerate(dataset):
+        if i >= args.n_samples:
+            break
         row = sample["atom_rows"][0]
-        ground_truth = df[i]["description"][0]
+        oqmd_id = sample["oqmd_id"]
+        ground_truth = dataset.dataset.df[dataset.dataset.oqmd_id_to_df_idx[oqmd_id]]['description'][0]
         formula = row.toatoms().get_chemical_formula()
 
         response = generate_from_row(
@@ -95,7 +99,7 @@ def evaluate(args):
         )
 
         print(f"\n{'='*60}")
-        print(f"Sample {i} | {formula}")
+        print(f"Sample {i}, Index {i} | {formula}")
         print(f"{'='*60}")
         print(f"GROUND TRUTH:\n{ground_truth[:300]}")
         print(f"---")

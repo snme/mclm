@@ -1,0 +1,91 @@
+These are examples of what the ALM generates given only a simple, zero-shot prompt and the atomic structure as input. All of these inputs are held-out and not seen during training.
+
+============================================================
+Sample 0, Index 0 | GaNaRhTa
+============================================================
+GROUND TRUTH:
+NaTaRhGa is Tungsten-derived structured and crystallizes in the cubic F-43m space group. Na(1) is bonded in a distorted body-centered cubic geometry to four equivalent Ta(1), six equivalent Rh(1), and four equivalent Ga(1) atoms. All Na(1)-Ta(1) bond lengths are 2.74 Å. All Na(1)-Rh(1) bond lengths 
+---
+GENERATED:
+NaTaRhGa is Tungsten-derived structured and crystallizes in the cubic F-43m space group. Na(1) is bonded to four equivalent Ta(1), six equivalent Rh(1), and four equivalent Ga(1) atoms to form distorted edge-sharing NaTa^4Rh^6Ga^2 tetrahedra. All Na(1)-Ta(1) bond lengths are 2.75 Å. All Na(1)-Rh(1) 
+
+============================================================
+Sample 1, Index 1 | FeNpPt
+============================================================
+GROUND TRUTH:
+NpFePt is half-Heusler structured and crystallizes in the cubic F-43m space group. Np(1) is bonded in a 10-coordinate geometry to four equivalent Fe(1) and six equivalent Pt(1) atoms. All Np(1)-Fe(1) bond lengths are 2.59 Å. All Np(1)-Pt(1) bond lengths are 2.99 Å. Fe(1) is bonded in a body-centered
+---
+GENERATED:
+NpFePt is half-Heusler structured and crystallizes in the cubic F-43m space group. Np(1) is bonded to four equivalent Fe(1) atoms to form a mixture of distorted corner and face-sharing NpFe4 tetrahedra. All Np(1)-Fe(1) bond lengths are 2.57 Å. Pt(1) is bonded in a body-centered cubic geometry to eig
+
+============================================================
+Sample 2, Index 2 | CoGaScTi
+============================================================
+GROUND TRUTH:
+ScTiCoGa is Tungsten-derived structured and crystallizes in the cubic F-43m space group. Sc(1) is bonded in a distorted body-centered cubic geometry to four equivalent Ti(1), six equivalent Co(1), and four equivalent Ga(1) atoms. All Sc(1)-Ti(1) bond lengths are 2.68 Å. All Sc(1)-Co(1) bond lengths 
+---
+GENERATED:
+ScTiCoGa is Tungsten-derived structured and crystallizes in the cubic F-43m space group. Sc(1) is bonded to four equivalent Ti(2), six equivalent Co(1), and four equivalent Ga(1) atoms to form distorted ScTi4Co6Ga4 tetrahedra that share corners with twelve equivalent ScTi4Co8Ga5, faces with eight eq
+
+============================================================
+Sample 3, Index 3 | AgHo3InMg3Pd
+============================================================
+GROUND TRUTH:
+Mg3Ho3PdAgIn crystallizes in the monoclinic Pm space group. There are three inequivalent Mg sites. In the first Mg site, Mg(1) is bonded in a 4-coordinate geometry to one Pd(1), two equivalent Ag(1), and one In(1) atom. The Mg(1)-Pd(1) bond length is 3.02 Å. Both Mg(1)-Ag(1) bond lengths are 2.79 Å.
+---
+GENERATED:
+Mg3Ho2PdAgIn crystallizes in the monoclinic Pm space group. There are three inequivalent Mg sites. In the first Mg site, Mg(1) is bonded to two equivalent Ho(1), one Ag(1), and two equivalent In(1) atoms to form a mixture of distorted edge-sharing, corner-connected, and 4-coordinate MgHooctahedra th
+
+============================================================
+Sample 4, Index 4 | CuGaSi
+============================================================
+GROUND TRUTH:
+CuGaSi is half-Heusler structured and crystallizes in the cubic F-43m space group. Cu(1) is bonded in a 10-coordinate geometry to six equivalent Ga(1) and four equivalent Si(1) atoms. All Cu(1)-Ga(1) bond lengths are 2.90 Å. All Cu(1)-Si(1) bond lengths are 2.51 Å. Ga(1) is bonded in a 10-coordinate
+---
+GENERATED:
+CuGaSi is half-Heusler structured and crystallizes in the cubic Fm3̅ m space group. Cu(1) is bonded to twelve equivalent Ga(1) and two equivalent Si(1) atoms to form a mixture of distorted face-sharing, edge-sharing, and corner-sharing CuGa6Si2 tetrahedra. All Cu(1)-Ga(1) bond lengths are 2.89 Å. Bo
+
+============================================================
+Sample 5, Index 5 | AuSiU2
+============================================================
+GROUND TRUTH:
+U2AuSi is Heusler structured and crystallizes in the cubic Fm-3m space group. U(1) is bonded in a body-centered cubic geometry to four equivalent Au(1) and four equivalent Si(1) atoms. All U(1)-Au(1) bond lengths are 3.07 Å. All U(1)-Si(1) bond lengths are 3.07 Å. Au(1) is bonded in a body-centered 
+---
+GENERATED:
+U2AuSi is Heusler structured and crystallizes in the cubic Fm-3m space group. U(1) is bonded in a body-centered cube geometry to four equivalent Au(1) and four equivalent Si(1) atoms, forming corner-sharing U(1)Au4Si4 tetrahedra. All U(1)-Au(1) bond lengths are 3.09 Å. All U(1)-Si(1) bond lengths ar
+
+============================================================
+Sample 6, Index 6 | AuNb2Re
+============================================================
+GROUND TRUTH:
+Nb2ReAu crystallizes in the cubic F-43m space group. There are two inequivalent Nb sites. In the first Nb site, Nb(1) is bonded in a 14-coordinate geometry to four equivalent Nb(2), four equivalent Re(1), and six equivalent Au(1) atoms. All Nb(1)-Nb(2) bond lengths are 2.81 Å. All Nb(1)-Re(1) bond l
+---
+GENERATED:
+Nb2ReAu is Zintl Phase-derived structured and crystallizes in the cubic F-43m space group. There are two inequivalent Nb sites. In the first Nb site, Nb(1) is bonded to four equivalent Re(1), six equivalent Au(1), and twelve equivalent Nb(2) atoms to form distorted edge-sharing NbNb12Au6Re4 tetrahed
+
+============================================================
+Sample 7, Index 7 | Ag4N2Tm4
+============================================================
+GROUND TRUTH:
+Tm2Ag2N crystallizes in the hexagonal P6_3/mmc space group. There are two inequivalent Tm sites. In the first Tm site, Tm(1) is bonded to six equivalent Ag(1) atoms to form distorted edge-sharing TmAg6 octahedra. All Tm(1)-Ag(1) bond lengths are 2.95 Å. In the second Tm site, Tm(2) is bonded in a tr
+---
+GENERATED:
+TmAgN crystallizes in the tetragonal P4/nmm space group. Tm(1) is bonded to four equivalent N(1) atoms to form a mixture of distorted corner and edge-sharing TmN4 trigons. All Tm(1)-N(1) bond lengths are 2.35 Å. Ag(1) is bonded in a linear geometry to two equivalent N(1) atoms. Both Ag(1)-N(1) bond 
+
+============================================================
+Sample 8, Index 8 | Li4Ni4O4Se4
+============================================================
+GROUND TRUTH:
+LiNiSeO crystallizes in the monoclinic P2_1 space group. There are two inequivalent Li sites. In the first Li site, Li(1) is bonded in a distorted L-shaped geometry to one Se(1), three equivalent Se(2), one O(1), and one O(2) atom. The Li(1)-Se(1) bond length is 2.69 Å. There are a spread of Li(1)-S
+---
+GENERATED:
+LiNiSeO crystallizes in the orthorhombic Pnma space group. Li(1) is bonded to four equivalent Se(2), two O(3), and three equivalent S(4) atoms to form a mixture of distorted corner, edge-sharing LiS5Se6 octahedra that share corners with five equivalent Ni(1)Li8 hexagonal bipyramids;  an edgeedge wit
+
+============================================================
+Sample 9, Index 9 | Mg4Sm2
+============================================================
+GROUND TRUTH:
+SmMg2 crystallizes in the monoclinic Pm space group. There are four inequivalent Mg sites. In the first Mg site, Mg(1) is bonded in a distorted linear geometry to four Mg(3,3) and two Sm(1,1) atoms. All Mg(1)-Mg(3,3) bond lengths are 3.24 Å. There is one shorter (2.80 Å) and one longer (2.81 Å) Mg(1
+---
+GENERATED:
+Mg2Tb crystallizes in the hexagonal P-6m2 space group. There are three inequivalent Mg sites. In the first Mg site, Mg(1) is bonded to six equivalent Tb(3); four equivalent Mg(4), and two equivalent Mg(5) atoms to form a mixture of distorted corner and face-sharing MgTb6 tetrahedra. All Mg(1)-Tb(3) 

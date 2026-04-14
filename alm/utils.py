@@ -20,6 +20,12 @@ class AtomisticLanguageDataset(Dataset):
             oqmd_id = int(row.data['smiles'])
             self.oqmd_id_to_db_idx[oqmd_id] = row.id
 
+        # lookup between oqmd and df index
+        self.oqmd_id_to_df_idx = {}
+        for row_idx in range(len(self.df)):
+            oqmd_id = self.df[row_idx]['oqmd_id'][0]
+            self.oqmd_id_to_df_idx[oqmd_id] = row_idx
+
     def __len__(self):
         return len(self.df)
 
@@ -74,7 +80,8 @@ class AtomisticLanguageDataset(Dataset):
             "input_ids": input_ids[:, :max_num_tokens],
             "labels": labels[:,:max_num_tokens],
             "attention_mask": torch.ones_like(input_ids[:,:max_num_tokens]),
-            "atom_rows" : [row]
+            "atom_rows" : [row], 
+            "oqmd_id" : self.df[idx]['oqmd_id'][0]
         }
 
 def is_dist_avail_and_initialized():
@@ -105,4 +112,5 @@ def custom_collate_fn(batch):
         "input_ids": [b["input_ids"].squeeze(0) for b in batch],
         "labels": [b["labels"].squeeze(0) for b in batch],
         "attention_mask": [b["attention_mask"].squeeze(0) for b in batch],
+        "oqmd_ids": [b["oqmd_id"] for b in batch],
     }

@@ -238,7 +238,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--db_path", type=str, default="/home/sathyae/orcd/db/oqmd.db")
     parser.add_argument("--train_csv_path", type=str, default="/home/sathyae/orcd/pool/train.csv")
-    parser.add_argument("--model_save_path", type=str, default="/home/sathyae/orcd/mclm/alm/model.pt")
+    parser.add_argument("--model_save_path", type=str, default="/home/sathyae/orcd/mclm/alm/checkpoint_model.pt")
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--beta1", type=float, default=0.9)
