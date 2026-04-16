@@ -4,27 +4,31 @@ from torch.utils.data import Dataset
 from ase.db import connect
 import polars as pl
 from tqdm import tqdm
+from pathlib import Path
+import numpy as np
 
 class AtomisticLanguageDataset(Dataset):
-    def __init__(self, tokenizer, db_path, csv_path, thinking=False, max_num_tokens=1024):
+    def __init__(self, tokenizer, db_path, csv_path, thinking=False, max_num_tokens=1024, dataset_name=None):
         super().__init__()
         self.db = connect(db_path) # ordered the same way as the df. # this is somehow not true anymore? whoops.
         self.tokenizer = tokenizer
         self.thinking = thinking
         self.df = pl.read_csv(csv_path)
         self.max_num_tokens = max_num_tokens
+        self.dataset_name = dataset_name
+        self.id_name = [column for column in self.df.columns if column.endswith('_id')][0]
 
-        # lookup betwen oqmd and db id
-        self.oqmd_id_to_db_idx = {}
+        # lookup betwen dataset and db id
+        self.dataset_id_to_db_idx = {}
         for row in tqdm(self.db.select(), total=len(self.db), desc="Building index for dataset"):
-            oqmd_id = int(row.data['smiles'])
-            self.oqmd_id_to_db_idx[oqmd_id] = row.id
+            dataset_id = row.data['smiles']
+            self.dataset_id_to_db_idx[dataset_id] = row.id
 
-        # lookup between oqmd and df index
-        self.oqmd_id_to_df_idx = {}
+        # lookup between dataset and df index
+        self.dataset_id_to_df_idx = {}
         for row_idx in range(len(self.df)):
-            oqmd_id = self.df[row_idx]['oqmd_id'][0]
-            self.oqmd_id_to_df_idx[oqmd_id] = row_idx
+            dataset_id = self.df[row_idx][self.id_name][0]
+            self.dataset_id_to_df_idx[dataset_id] = row_idx
 
     def __len__(self):
         return len(self.df)
@@ -36,7 +40,7 @@ class AtomisticLanguageDataset(Dataset):
 
         # process single atom
         description = self.df[idx]['description'][0]
-        row = self.db.get(self.oqmd_id_to_db_idx[self.df[idx]['oqmd_id'][0]])
+        row = self.db.get(self.dataset_id_to_db_idx[self.df[idx][self.id_name][0]])
         
         # let's start with a simple prompt.
         messages = [
@@ -81,8 +85,42 @@ class AtomisticLanguageDataset(Dataset):
             "labels": labels[:,:max_num_tokens],
             "attention_mask": torch.ones_like(input_ids[:,:max_num_tokens]),
             "atom_rows" : [row], 
-            "oqmd_id" : self.df[idx]['oqmd_id'][0]
+            "id" : self.df[idx][self.id_name][0]
         }
+
+
+class FullAtomisticLanguageDataset(Dataset):
+    def __init__(self, tokenizer, split, parent_folder, thinking=False, max_num_tokens=1024):
+        # split should be 'train' or 'validation'
+        super().__init__()
+        self.parent_folder = Path(parent_folder)
+        self.datasets = {}
+        self.lengths = {}
+        folders = sorted(self.parent_folder.iterdir())
+        for folder in folders:
+            if folder.is_dir():
+                dataset_name = str(folder).split('/')[-1]
+                dataset = AtomisticLanguageDataset(
+                    tokenizer=tokenizer,
+                    db_path=folder / f'{split}.db',
+                    csv_path=folder / f'{split}.csv',
+                    thinking=thinking,
+                    max_num_tokens=max_num_tokens,
+                    dataset_name=dataset_name,
+                )
+                self.datasets[dataset_name] = dataset
+                self.lengths[dataset_name] = len(dataset)
+        self.cum_lengths = np.cumsum(list(self.lengths.values()))
+                
+    def __len__(self):
+        return self.cum_lengths[-1]
+
+    def __getitem__(self, idx):
+        dataset_ind = np.searchsorted(self.cum_lengths, idx, side="right")
+        dataset = self.datasets[list(self.datasets.keys())[dataset_ind]]
+        start = 0 if dataset_ind == 0 else self.cum_lengths[dataset_ind - 1].item()
+        return dataset[idx - start]
+
 
 def is_dist_avail_and_initialized():
     if not dist.is_available():
@@ -112,5 +150,5 @@ def custom_collate_fn(batch):
         "input_ids": [b["input_ids"].squeeze(0) for b in batch],
         "labels": [b["labels"].squeeze(0) for b in batch],
         "attention_mask": [b["attention_mask"].squeeze(0) for b in batch],
-        "oqmd_ids": [b["oqmd_id"] for b in batch],
+        "id": [b["id"] for b in batch],
     }

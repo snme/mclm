@@ -12,7 +12,8 @@ from utils import is_main_process
 class AtomisticLanguageModel(nn.Module):
     # expects the underscored version of the OrbV3 atomistic model name
     # first implementation will has one atomistic token per atom.
-    def __init__(self, llm_name='Qwen/Qwen3-8B', atomistic_model_name='orb_v3_direct_20_omat', device=None):
+    def __init__(self, llm_name='Qwen/Qwen3-8B', atomistic_model_name='orb_v3_direct_20_omat', device=None,
+                 attn_implementation="flash_attention_2"):
         super().__init__()
         self.device = device if device is not None else torch.device("cuda")
 
@@ -20,7 +21,7 @@ class AtomisticLanguageModel(nn.Module):
         self.llm = AutoModelForCausalLM.from_pretrained(
             llm_name,
             torch_dtype=torch.bfloat16, # let's stick with b16 for now.
-            attn_implementation="flash_attention_2"
+            attn_implementation=attn_implementation
         )
         self.tokenizer = AutoTokenizer.from_pretrained(llm_name)
         self.llm_hidden_dim = self.llm.config.hidden_size
