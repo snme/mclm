@@ -5,7 +5,7 @@ import polars as pl
 import shutil
 import argparse
 from tqdm import tqdm
-import osdd
+import os
 
 def csv_to_ase(folder_path):
     for folder in os.listdir(folder_path):

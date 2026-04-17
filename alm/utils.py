@@ -16,19 +16,20 @@ class AtomisticLanguageDataset(Dataset):
         self.df = pl.read_csv(csv_path)
         self.max_num_tokens = max_num_tokens
         self.dataset_name = dataset_name
-        self.id_name = [column for column in self.df.columns if column.endswith('_id')][0]
+        # self.id_name = [column for column in self.df.columns if column.endswith('_id')][0]
+        self.id_name = self.df.columns[0]
 
         # lookup betwen dataset and db id
         self.dataset_id_to_db_idx = {}
         for row in tqdm(self.db.select(), total=len(self.db), desc="Building index for dataset"):
             dataset_id = row.data['smiles']
-            self.dataset_id_to_db_idx[dataset_id] = row.id
+            self.dataset_id_to_db_idx[str(dataset_id)] = row.id
 
         # lookup between dataset and df index
         self.dataset_id_to_df_idx = {}
         for row_idx in range(len(self.df)):
             dataset_id = self.df[row_idx][self.id_name][0]
-            self.dataset_id_to_df_idx[dataset_id] = row_idx
+            self.dataset_id_to_df_idx[str(dataset_id)] = row_idx
 
     def __len__(self):
         return len(self.df)
@@ -40,7 +41,7 @@ class AtomisticLanguageDataset(Dataset):
 
         # process single atom
         description = self.df[idx]['description'][0]
-        row = self.db.get(self.dataset_id_to_db_idx[self.df[idx][self.id_name][0]])
+        row = self.db.get(self.dataset_id_to_db_idx[str(self.df[idx][self.id_name][0])])
         
         # let's start with a simple prompt.
         messages = [
@@ -119,6 +120,13 @@ class FullAtomisticLanguageDataset(Dataset):
         dataset_ind = np.searchsorted(self.cum_lengths, idx, side="right")
         dataset = self.datasets[list(self.datasets.keys())[dataset_ind]]
         start = 0 if dataset_ind == 0 else self.cum_lengths[dataset_ind - 1].item()
+        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
+        
+        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
+        
+        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
+        
+        print(self.cum_lengths)
         return dataset[idx - start]
 
 
