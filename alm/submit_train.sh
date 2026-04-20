@@ -73,7 +73,18 @@ srun -u torchrun \
 #     --nnodes=1 \
 #     --nproc-per-node=8 \
 #     --rdzv-backend=c10d \
-#     --rdzv-endpoint=node4300:29507 \
+#     --rdzv-endpoint=$(hostname):29507 \
+#     train.py \
+#     --train_csv_path /tmp/train.csv \
+#     --val_csv_path /tmp/validation.csv \
+#     --db_path /tmp/oqmd.db \
+#     --model_save_path /home/sathyae/mclm/alm/checkpoint.pt
+
+# torchrun \
+#     --nnodes=1 \
+#     --nproc-per-node=8 \
+#     --rdzv-backend=c10d \
+#     --rdzv-endpoint=$(hostname):29507 \
 #     train.py \
 #     --train_csv_path /tmp/train.csv \
 #     --val_csv_path /tmp/validation.csv \

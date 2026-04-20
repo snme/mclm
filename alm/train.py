@@ -8,7 +8,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, DistributedSampler
 from transformers import get_cosine_schedule_with_warmup
 
-from utils import AtomisticLanguageDataset, custom_collate_fn, is_main_process
+from utils import AtomisticLanguageDataset, custom_collate_fn, is_main_process, FullAtomisticLanguageDataset
 from alm import AtomisticLanguageModel
 import wandb
 
@@ -43,16 +43,33 @@ def train(args):
               f"({100*trainable_params/total_params:.2f}%)")
 
 
-    # get train and val dataloaders
-    dataset = AtomisticLanguageDataset(
-        tokenizer=model.module.tokenizer,
-        db_path=args.db_path,
-        csv_path=args.train_csv_path,
-        thinking=args.thinking,
-        max_num_tokens=args.max_num_tokens,
-    )
-    generator = torch.Generator().manual_seed(42)
-    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2], generator=generator)
+    if args.train_csv_path is not None:
+        dataset = AtomisticLanguageDataset(
+            tokenizer=model.module.tokenizer,
+            db_path=args.db_path,
+            csv_path=args.train_csv_path,
+            thinking=args.thinking,
+            max_num_tokens=args.max_num_tokens,
+        )
+        generator = torch.Generator().manual_seed(42)
+        train_dataset, val_dataset = random_split(dataset, [0.8, 0.2], generator=generator)
+    else:
+        print(f"Training on full dataset from {args.data_parent_path}")
+        train_dataset = FullAtomisticLanguageDataset(
+            tokenizer=model.module.tokenizer,
+            split='train',
+            parent_folder=args.data_parent_path,
+            thinking=args.thinking,
+            max_num_tokens=args.max_num_tokens,
+        )
+        val_dataset = FullAtomisticLanguageDataset(
+            tokenizer=model.module.tokenizer,
+            split='validation',
+            parent_folder=args.data_parent_path,
+            thinking=args.thinking,
+            max_num_tokens=args.max_num_tokens,
+        )
+
     sampler = DistributedSampler(train_dataset, shuffle=True)
     train_dataloader = DataLoader(
         train_dataset,
@@ -236,9 +253,10 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--db_path", type=str, default="/home/sathyae/orcd/db/oqmd.db")
-    parser.add_argument("--train_csv_path", type=str, default="/home/sathyae/orcd/pool/train.csv")
+    parser.add_argument("--db_path", type=str, default=None) # "/home/sathyae/orcd/db/oqmd.db")
+    parser.add_argument("--train_csv_path", type=str, default=None) # "/home/sathyae/orcd/pool/train.csv"
     parser.add_argument("--model_save_path", type=str, default="/home/sathyae/orcd/mclm/alm/checkpoint_model.pt")
+    parser.add_argument("--data_parent_path", type=str, default='/tmp/LLM4Mat-Bench/') # if training on a parent directory of ALM datasets
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--beta1", type=float, default=0.9)

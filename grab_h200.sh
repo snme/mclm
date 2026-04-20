@@ -5,6 +5,7 @@
 #SBATCH -e cache%j.e         # Job name
 #SBATCH --nodes 1                       # Number of nodes
 #SBATCH --time=48:00:00
+#SBATCH --nodelist=node4301
 #SBATCH --exclusive
 #SBATCH --partition=pg_tata
 #SBATCH --gres=gpu:h200:8

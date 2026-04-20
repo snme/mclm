@@ -6,6 +6,8 @@ import polars as pl
 from tqdm import tqdm
 from pathlib import Path
 import numpy as np
+import json
+import os
 
 class AtomisticLanguageDataset(Dataset):
     def __init__(self, tokenizer, db_path, csv_path, thinking=False, max_num_tokens=1024, dataset_name=None):
@@ -13,26 +15,33 @@ class AtomisticLanguageDataset(Dataset):
         self.db = connect(db_path) # ordered the same way as the df. # this is somehow not true anymore? whoops.
         self.tokenizer = tokenizer
         self.thinking = thinking
-        self.df = pl.read_csv(csv_path)
         self.max_num_tokens = max_num_tokens
         self.dataset_name = dataset_name
-        # self.id_name = [column for column in self.df.columns if column.endswith('_id')][0]
-        self.id_name = self.df.columns[0]
+
+        # Only load the columns we actually use: id (first column) and description.
+        # Reading the full CSV is multi-GB per dataset and × 8 ranks blows host RAM.
+        header_cols = pl.read_csv(csv_path, n_rows=0).columns
+        self.id_name = [col for col in header_cols if col.endswith('_id')][0]
+        df = pl.read_csv(csv_path, columns=[self.id_name, "description"])
+        # Materialize as plain Python lists once; cheaper random access than df[idx][col][0].
+        self._ids = df[self.id_name].to_list()
+        self._descriptions = df["description"].to_list()
+        del df
 
         # lookup betwen dataset and db id
-        self.dataset_id_to_db_idx = {}
-        for row in tqdm(self.db.select(), total=len(self.db), desc="Building index for dataset"):
-            dataset_id = row.data['smiles']
-            self.dataset_id_to_db_idx[str(dataset_id)] = row.id
-
-        # lookup between dataset and df index
-        self.dataset_id_to_df_idx = {}
-        for row_idx in range(len(self.df)):
-            dataset_id = self.df[row_idx][self.id_name][0]
-            self.dataset_id_to_df_idx[str(dataset_id)] = row_idx
+        id_index_path = str(db_path).replace(".db", ".id_index.json")
+        if os.path.exists(id_index_path):
+            with open(id_index_path, 'r') as f:
+                self.dataset_id_to_db_idx = json.load(f)
+        else:
+            # not recommended, extremely slow
+            self.dataset_id_to_db_idx = {}
+            for row in tqdm(self.db.select(), total=len(self.db), desc="Building index for dataset"):
+                dataset_id = row.data['smiles']
+                self.dataset_id_to_db_idx[str(dataset_id)] = row.id
 
     def __len__(self):
-        return len(self.df)
+        return len(self._ids)
 
     def __getitem__(self, idx):
         return self.prepare_sample(idx)
@@ -40,8 +49,9 @@ class AtomisticLanguageDataset(Dataset):
     def prepare_sample(self, idx):
 
         # process single atom
-        description = self.df[idx]['description'][0]
-        row = self.db.get(self.dataset_id_to_db_idx[str(self.df[idx][self.id_name][0])])
+        description = self._descriptions[idx]
+        sample_id = self._ids[idx]
+        row = self.db.get(self.dataset_id_to_db_idx[str(sample_id)])
         
         # let's start with a simple prompt.
         messages = [
@@ -86,7 +96,7 @@ class AtomisticLanguageDataset(Dataset):
             "labels": labels[:,:max_num_tokens],
             "attention_mask": torch.ones_like(input_ids[:,:max_num_tokens]),
             "atom_rows" : [row], 
-            "id" : self.df[idx][self.id_name][0]
+            "id" : sample_id
         }
 
 
@@ -120,13 +130,6 @@ class FullAtomisticLanguageDataset(Dataset):
         dataset_ind = np.searchsorted(self.cum_lengths, idx, side="right")
         dataset = self.datasets[list(self.datasets.keys())[dataset_ind]]
         start = 0 if dataset_ind == 0 else self.cum_lengths[dataset_ind - 1].item()
-        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
-        
-        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
-        
-        print(dataset_ind, start, idx, list(self.datasets.keys())[dataset_ind])
-        
-        print(self.cum_lengths)
         return dataset[idx - start]
 
 
