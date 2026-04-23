@@ -57,26 +57,20 @@ def main(args):
             embeddings[smiles[i]] = torch_embeddings[-1].numpy()
         batch_idx += 1
     
-    torch_embeddings = torch.stack(torch_embeddings, dim=0)
-    if args.save_atom_embeddings:
-        args.postfix = '_atom'
-        torch_embeddings = torch_embeddings.flatten()
     os.makedirs(f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/embeddings/", exist_ok=True)
-    torch.save(torch_embeddings, f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/embeddings/{args.model_name}{args.postfix}.pt")
-        
-    os.makedirs(f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/orbv3/", exist_ok=True)
-    with h5py.File(f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/orbv3/{args.model_name}{args.postfix}.h5", "w") as f:  
-        for k, v in embeddings.items():
-            f[k] = v
+    if args.save_atom_embeddings:
+        torch.save(embeddings, f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/embeddings/{args.model_name}{args.postfix}.pt")
+    else:
+        torch_embeddings = torch.stack(torch_embeddings, dim=0)
+        torch.save(torch_embeddings, f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/embeddings/{args.model_name}{args.postfix}.pt")
 
-    # write out keys for the embeddings
     with open(f"/home/sathyae/orcd/pool/cached_embs/{args.dataset_name}/embeddings/{args.model_name}{args.postfix}_keys.txt", "w") as f:
         f.write("\n".join(list(embeddings.keys())))
 # %%
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cache embeddings for dataset.")
-    parser.add_argument("--model_name", type=str, required=True, help="Exact OrbV3 name of the model to use for embedding, with dashes")
+    parser.add_argument("--model_name", type=str, default='orb_v3_direct_20_omat', help="Exact OrbV3 name of the model to use for embedding, with dashes")
     parser.add_argument("--data_path", type=str, required=True, help="Absolute path to QM9 ASE DB")
     parser.add_argument('--dataset_name', type=str, default='dataset name')
     parser.add_argument('--batch_size', type=int, default=10)

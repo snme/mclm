@@ -51,9 +51,12 @@ export WORLD_SIZE=$SLURM_NTASKS
 echo "MASTER_ADDR : ${MASTER_ADDR}"
 echo "MASTER_PORT : ${MASTER_PORT}"
 
-cp $DATA_HOME/train.csv /tmp/train.csv
-cp $DATA_HOME/validation.csv /tmp/validation.csv
-cp $DATA_HOME/oqmd.db /tmp/oqmd.db
+# Full-dataset training on all 10 LLM4Mat-Bench datasets using cached OrbV3 features.
+# /tmp/LLM4Mat-Bench needs the per-dataset CSVs (descriptions); DBs are unused in cached mode.
+# /tmp/cached_embs must already contain the .flat.bin / .flat.idx.json pairs
+# (produced once by helper_scripts/flatten_cached_embs.py).
+rsync -a --include='*/' --include='*.csv' --exclude='*' \
+    $DATA_HOME/LLM4Mat-Bench/ /tmp/LLM4Mat-Bench/
 
 srun -u torchrun \
     --nnodes=$SLURM_JOB_NUM_NODES \
@@ -61,9 +64,8 @@ srun -u torchrun \
     --rdzv-backend=c10d \
     --rdzv-endpoint=$MASTER_ADDR:$MASTER_PORT \
     train.py \
-    --train_csv_path /tmp/train.csv \
-    --val_csv_path /tmp/validation.csv \
-    --db_path /tmp/oqmd.db \
+    --data_parent_path /tmp/LLM4Mat-Bench \
+    --cached_embs_parent_path /tmp/cached_embs \
     --model_save_path /home/sathyae/mclm/alm/checkpoint.pt
 
 

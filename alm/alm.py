@@ -13,9 +13,13 @@ class AtomisticLanguageModel(nn.Module):
     # expects the underscored version of the OrbV3 atomistic model name
     # first implementation will has one atomistic token per atom.
     def __init__(self, llm_name='Qwen/Qwen3-8B', atomistic_model_name='orb_v3_direct_20_omat', device=None,
-                 attn_implementation="flash_attention_2"):
+                 attn_implementation="flash_attention_2", use_cached_embeddings=False, max_atoms=None):
         super().__init__()
         self.device = device if device is not None else torch.device("cuda")
+        self.use_cached_embeddings = use_cached_embeddings
+        # Matches the cap applied in AtomisticLanguageDataset.prepare_sample so live mode
+        # doesn't silently splice the full (uncapped) atom count back into the sequence.
+        self.max_atoms = max_atoms
 
         # load the frozen llm
         self.llm = AutoModelForCausalLM.from_pretrained(
@@ -30,15 +34,19 @@ class AtomisticLanguageModel(nn.Module):
         for param in self.llm.parameters():
             param.requires_grad = False
 
-        # load frozen atomistic encoder. for now, due to inference speed, let's go with OrbV3.
-        model = getattr(pretrained, atomistic_model_name)
-        orbff = model(
-            device=self.device,
-            precision="float32-high",   # or "float32-highest" / "float64
-        )
-        self.atomistic_model = orbff
-        for param in self.atomistic_model.parameters():
-            param.requires_grad = False
+        # Frozen atomistic encoder. Skipped when using pre-cached OrbV3 features —
+        # no point paying the 7 GB GPU load + per-step graph build if we'll never call it.
+        if use_cached_embeddings:
+            self.atomistic_model = None
+        else:
+            model = getattr(pretrained, atomistic_model_name)
+            orbff = model(
+                device=self.device,
+                precision="float32-high",   # or "float32-highest" / "float64
+            )
+            self.atomistic_model = orbff
+            for param in self.atomistic_model.parameters():
+                param.requires_grad = False
         
         # trainable atomistic projector: only trainable part of this model
         llm_dim = self.llm_hidden_dim
@@ -53,18 +61,21 @@ class AtomisticLanguageModel(nn.Module):
         self.atoms_token_id = self.tokenizer.convert_tokens_to_ids(self.atom_token)
         self.llm.resize_token_embeddings(len(self.tokenizer))
 
-    def encode_atoms(self, row_batch): 
+    def encode_atoms(self, row_batch):
         # expects ASE atoms rows
         # assumes using OrbV3
 
         with torch.no_grad():
+            atoms_list = [row.toatoms() for row in row_batch]
+            if self.max_atoms is not None:
+                atoms_list = [a[:self.max_atoms] for a in atoms_list]
             batch = [
                 atomic_system.ase_atoms_to_atom_graphs(
-                    row.toatoms(),
+                    atoms,
                     self.atomistic_model.system_config,
                     device=self.device,
                 )
-                for row in row_batch
+                for atoms in atoms_list
             ]
             graph = batch_graphs(batch)
             results = self.atomistic_model.model(graph)
@@ -73,10 +84,25 @@ class AtomisticLanguageModel(nn.Module):
         n_atoms = tuple(graph.n_node.tolist())
         return out, n_atoms
 
+    def encode_cached_atoms(self, atom_embeds):
+        # atom_embeds: list of (N_i, 256) float32 tensors already produced by OrbV3.
+        # Concat → project; mirrors encode_atoms' return contract.
+        n_atoms = tuple(a.shape[0] for a in atom_embeds)
+        projector_dtype = next(self.projector.parameters()).dtype
+        stacked = torch.cat(
+            [a.to(device=self.device, dtype=projector_dtype, non_blocking=True) for a in atom_embeds],
+            dim=0,
+        )
+        out = self.projector(stacked)
+        return out, n_atoms
 
-    def forward(self, row_batch, input_ids, attention_mask, labels):
+
+    def forward(self, input_ids, attention_mask, labels, row_batch=None, atom_embeds=None):
         # get atomistic features
-        atomistic_features, n_atoms = self.encode_atoms(row_batch)
+        if atom_embeds is not None:
+            atomistic_features, n_atoms = self.encode_cached_atoms(atom_embeds)
+        else:
+            atomistic_features, n_atoms = self.encode_atoms(row_batch)
         atomistic_features = torch.split(atomistic_features, n_atoms)
 
         # get text embeddings

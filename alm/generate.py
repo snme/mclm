@@ -1,24 +1,24 @@
 import argparse
-import torch
-from torch.utils.data import DataLoader, random_split
-from ase.db import connect
-import polars as pl
+from pathlib import Path
 
-from utils import AtomisticLanguageDataset, custom_collate_fn
+import torch
+
+from utils import AtomisticLanguageDataset
 from alm import AtomisticLanguageModel
 
 
-def generate_from_row(model, row, max_new_tokens=512, temperature=0.6, top_p=0.95):
-    """Generate a description given an ASE database row."""
+def generate_from_sample(model, sample, max_new_tokens=512, temperature=0.6, top_p=0.95, repetition_penalty=1.3):
+    """Mirror the training forward pass, then autoregressively decode from stitched embeds."""
     device = model.device
 
     with torch.no_grad():
         with torch.cuda.amp.autocast(dtype=torch.bfloat16):
-            # 1. Encode atoms
-            atomistic_features, n_atoms = model.encode_atoms([row])
+            if "atom_embed" in sample:
+                atomistic_features, n_atoms = model.encode_cached_atoms([sample["atom_embed"]])
+            else:
+                atomistic_features, n_atoms = model.encode_atoms(sample["atom_rows"])
             atomistic_features = torch.split(atomistic_features, n_atoms)
 
-            # 2. Build prompt (same messages as the dataset)
             messages = [
                 {"role": "system", "content": "You are an expert at materials science and atomistic structure."},
                 {"role": "user", "content": "<atoms>\nDescribe the structure of this material."},
@@ -26,19 +26,16 @@ def generate_from_row(model, row, max_new_tokens=512, temperature=0.6, top_p=0.9
             prompt_ids = model.tokenizer.apply_chat_template(
                 messages, tokenize=True, add_generation_prompt=True, enable_thinking=False,
             )
-            input_ids_tensor = torch.tensor([prompt_ids], device=device)
+            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=device)
 
-            # 3. Stitch via _merge_embeddings (same path as training forward pass)
             embed_layer = model.llm.get_input_embeddings()
-            text_embeds = [embed_layer(input_ids_tensor[0])]
-            dummy_labels = [torch.full((input_ids_tensor.shape[1],), -100, dtype=torch.long, device=device)]
-            attn_mask = [torch.ones(input_ids_tensor.shape[1], dtype=torch.long, device=device)]
-
+            text_embeds = [embed_layer(prompt_tensor)]
+            dummy_labels = [torch.full((prompt_tensor.shape[0],), -100, dtype=torch.long, device=device)]
+            attn_mask = [torch.ones(prompt_tensor.shape[0], dtype=torch.long, device=device)]
             inputs_embeds, _, attention_mask = model._merge_embeddings(
-                text_embeds, atomistic_features, [input_ids_tensor[0]], dummy_labels, attn_mask
+                text_embeds, atomistic_features, [prompt_tensor], dummy_labels, attn_mask,
             )
 
-            # 4. Generate
             output_ids = model.llm.generate(
                 inputs_embeds=inputs_embeds,
                 attention_mask=attention_mask,
@@ -46,7 +43,7 @@ def generate_from_row(model, row, max_new_tokens=512, temperature=0.6, top_p=0.9
                 temperature=temperature,
                 top_p=top_p,
                 do_sample=True,
-                repetition_penalty=1.3,
+                repetition_penalty=repetition_penalty,
                 eos_token_id=model.tokenizer.eos_token_id,
                 pad_token_id=model.tokenizer.pad_token_id or model.tokenizer.eos_token_id,
             )
@@ -55,13 +52,15 @@ def generate_from_row(model, row, max_new_tokens=512, temperature=0.6, top_p=0.9
 
 
 def evaluate(args):
-    device = torch.device("cuda")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Load model (no DDP)
+    use_cached = bool(args.cached_embs_path)
     model = AtomisticLanguageModel(
         llm_name="Qwen/Qwen3-8B",
         atomistic_model_name="orb_v3_direct_20_omat",
         device=device,
+        use_cached_embeddings=use_cached,
+        max_atoms=max(1, args.max_num_tokens - 256),
     )
     checkpoint = torch.load(args.checkpoint, map_location=device)
     if isinstance(checkpoint, dict) and "projector_state_dict" in checkpoint:
@@ -71,49 +70,54 @@ def evaluate(args):
     model = model.to(device)
     model.eval()
 
-    # Load validation dataset
-    full_dataset = AtomisticLanguageDataset(
+    folder = Path(args.data_folder)
+    dataset = AtomisticLanguageDataset(
         tokenizer=model.tokenizer,
-        db_path=args.db_path,
-        csv_path=args.csv_path,
+        db_path=(folder / f"{args.split}.db") if not use_cached else None,
+        csv_path=folder / f"{args.split}.csv",
         thinking=False,
         max_num_tokens=args.max_num_tokens,
+        dataset_name=folder.name,
+        cached_embs_path=args.cached_embs_path,
     )
-    df = pl.read_csv(args.csv_path)
-    generator = torch.Generator().manual_seed(42)
-    _, dataset = random_split(full_dataset, [0.8, 0.2], generator=generator)
 
-    # Iterate over samples
-    for i, sample in enumerate(dataset):
-        if i >= args.n_samples:
-            break
-        row = sample["atom_rows"][0]
-        oqmd_id = sample["oqmd_id"]
-        ground_truth = dataset.dataset.df[dataset.dataset.oqmd_id_to_df_idx[oqmd_id]]['description'][0]
-        formula = row.toatoms().get_chemical_formula()
+    for i in range(min(args.n_samples, len(dataset))):
+        sample = dataset[i]
+        sample_id = sample["id"]
+        ground_truth = dataset._descriptions[i]
 
-        response = generate_from_row(
-            model, row,
+        response = generate_from_sample(
+            model, sample,
             max_new_tokens=args.max_new_tokens,
             temperature=args.temperature,
+            top_p=args.top_p,
         )
 
-        print(f"\n{'='*60}")
-        print(f"Sample {i}, Index {i} | {formula}")
-        print(f"{'='*60}")
+        formula = ""
+        if "atom_rows" in sample:
+            formula = sample["atom_rows"][0].toatoms().get_chemical_formula()
+
+        print(f"\n{'=' * 60}")
+        print(f"Sample {i} | id={sample_id} | {formula}")
+        print(f"{'=' * 60}")
         print(f"GROUND TRUTH:\n{ground_truth[:300]}")
-        print(f"---")
+        print("---")
         print(f"GENERATED:\n{response[:300]}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=str, required=True)
-    parser.add_argument("--db_path", type=str, default="/tmp/oqmd.db")
-    parser.add_argument("--csv_path", type=str, default="/tmp/train.csv")
+    parser.add_argument("--data_folder", type=str, required=True,
+                        help="Single dataset folder in LLM4Mat-Bench layout, e.g. /tmp/LLM4Mat-Bench/oqmd.")
+    parser.add_argument("--cached_embs_path", type=str, default=None,
+                        help="Full path to {dataset}/embeddings/{model}_{split}_atom.flat.bin. "
+                             "If set, skips DB/live OrbV3 (cached-embedding path, matches training).")
+    parser.add_argument("--split", type=str, default="validation")
     parser.add_argument("--n_samples", type=int, default=10)
     parser.add_argument("--max_new_tokens", type=int, default=512)
     parser.add_argument("--max_num_tokens", type=int, default=2048)
-    parser.add_argument("--temperature", type=float, default=0.1)
+    parser.add_argument("--temperature", type=float, default=0.6)
+    parser.add_argument("--top_p", type=float, default=0.95)
     args = parser.parse_args()
     evaluate(args)
