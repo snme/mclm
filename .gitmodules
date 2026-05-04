@@ -1,0 +1,3 @@
+[submodule "external/mattergen"]
+	path = external/mattergen
+	url = https://github.com/microsoft/mattergen.git

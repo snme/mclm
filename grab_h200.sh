@@ -5,10 +5,10 @@
 #SBATCH -e cache%j.e         # Job name
 #SBATCH --nodes 1                       # Number of nodes
 #SBATCH --time=48:00:00
-#SBATCH --nodelist=node4300,node4301
-#SBATCH --exclusive
+#SBATCH --nodelist=node4301
 #SBATCH --partition=pg_tata
-#SBATCH --gres=gpu:h200:8
+#SBATCH --gres=gpu:h200:7
+#SBATCH --mem=0                         # use full node RAM (--exclusive doesn't imply this)
 #SBATCH --mail-type=all                 #
 #SBATCH --mail-user=sathyae@mit.edu     # send emails
 

@@ -39,7 +39,7 @@ def main(args):
     torch_embeddings = []
     batch_idx = 0
     for batch in tqdm(get_batch(batch_size, db), total=len(db) // batch_size, desc="Outer loop"):
-        smiles = [row.data['smiles'] for row in batch]
+        smiles = [row.data[args.id_key] for row in batch]
         atoms = [row.toatoms() for row in batch]
         if batch_idx % 100 == 0:
             print(smiles)
@@ -76,5 +76,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=10)
     parser.add_argument('--save_atom_embeddings', action='store_true', default=False)
     parser.add_argument('--postfix', type=str, default='', help="Postfix to add to the embedding path")
+    parser.add_argument('--id_key', type=str, default='smiles',
+                        help="Field in row.data used as the per-sample id "
+                             "(default 'smiles' for legacy LLM4Mat caches; use "
+                             "'material_id' for MatterChat dbs).")
     args = parser.parse_args()
     main(args)

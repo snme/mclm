@@ -139,6 +139,7 @@ def train(args):
     )
 
     start_epoch = args.start_epoch
+    scheduler_state_loaded = False
     if args.resume_from_checkpoint is not None:
         checkpoint = torch.load(args.resume_from_checkpoint, map_location=device)
         if isinstance(checkpoint, dict) and "projector_state_dict" in checkpoint:
@@ -147,6 +148,7 @@ def train(args):
                 optim.load_state_dict(checkpoint["optimizer_state_dict"])
             if "scheduler_state_dict" in checkpoint:
                 scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+                scheduler_state_loaded = True
             if args.start_epoch == 0:
                 start_epoch = int(checkpoint.get("epoch", 0))
             if main_process:
@@ -164,6 +166,24 @@ def train(args):
                 )
         dist.barrier()
 
+    # If we're resuming mid-run without scheduler state, fast-forward the LR schedule
+    # to (start_epoch, start_step) so we don't restart warmup.
+    target_global_step = start_epoch * len(train_dataloader) + args.start_step
+    if not scheduler_state_loaded and target_global_step > 0:
+        import warnings
+        with warnings.catch_warnings():
+            # Suppress the "lr_scheduler.step() before optimizer.step()" warning —
+            # we're intentionally advancing the schedule without stepping the optimizer.
+            warnings.filterwarnings("ignore", category=UserWarning)
+            for _ in range(target_global_step):
+                scheduler.step()
+        if main_process:
+            print(
+                f"Fast-forwarded scheduler by {target_global_step} steps "
+                f"(epoch={start_epoch}, step={args.start_step}). "
+                f"Current LR: {scheduler.get_last_lr()[0]:.6f}"
+            )
+
     if use_wandb:
         wandb.init(
             project=args.wandb_project,
@@ -172,7 +192,7 @@ def train(args):
 
     # training loop
 
-    for epoch in tqdm[int](
+    for epoch in tqdm(
         range(start_epoch, num_epochs),
         desc="Training",
         disable=not main_process,
@@ -185,6 +205,7 @@ def train(args):
         if model.module.atomistic_model is not None:
             model.module.atomistic_model.eval()
         optim.zero_grad(set_to_none=True)
+        initial_step = args.start_step if epoch == start_epoch else 0
         for step, batch in tqdm(
             enumerate(train_dataloader),
             total=len(train_dataloader),
@@ -194,6 +215,8 @@ def train(args):
             leave=False,
             position=1,
         ):
+            if step < initial_step:
+                continue
             row_batch = batch.get('atom_rows')
             atom_embeds = batch.get('atom_embeds')
             input_ids = [ids.to(device) for ids in batch["input_ids"]]
@@ -265,9 +288,21 @@ def train(args):
                         }
                     )
 
-                # Save only the projector weights (from rank 0)
+                # Save full training state (from rank 0). Dict format is forward-compatible:
+                # both train.py resume and generate.py sniff for "projector_state_dict" and fall
+                # back to treating the blob as a raw state_dict for legacy checkpoints.
                 if is_main_process():
-                    torch.save(model.module.projector.state_dict(), args.model_save_path.replace(".pt", f"_step={step}.pt"))
+                    torch.save(
+                        {
+                            "projector_state_dict": model.module.projector.state_dict(),
+                            "optimizer_state_dict": optim.state_dict(),
+                            "scheduler_state_dict": scheduler.state_dict(),
+                            "epoch": epoch,
+                            "step": step,
+                            "global_step": epoch * len(train_dataloader) + step,
+                        },
+                        args.model_save_path.replace(".pt", f"_step={step}.pt"),
+                    )
                     if args.checkpoint_save_path is not None:
                         checkpoint_path = args.checkpoint_save_path.format(epoch=epoch + 1)
                         torch.save(
@@ -311,6 +346,9 @@ if __name__ == '__main__':
     parser.add_argument("--val_subset_fraction", type=float, default=None,
                         help="If set in (0, 1), validate on a fixed-seed random fraction of the val set.")
     parser.add_argument("--start_epoch", type=int, default=0)
+    parser.add_argument("--start_step", type=int, default=0,
+                        help="Skip the first N batches of the starting epoch. "
+                             "Only applies to the first epoch of the resumed run.")
     parser.add_argument("--resume_from_checkpoint", type=str, default=None)
     parser.add_argument("--checkpoint_save_path", type=str, default=None)
     parser.add_argument("--num_workers", type=int, default=0,
